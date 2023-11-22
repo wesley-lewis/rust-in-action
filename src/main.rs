@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::fs::File;
+use std::io;
 use std::io::BufReader;
 use std::io::prelude::*;
 
@@ -8,13 +9,74 @@ use regex::Regex;
 use clap::{App, Arg};
 
 fn main() {
-    let f = File::open("readme.md").unwrap();
-    let reader = BufReader::new(f);
+    let args = App::new("grep-lite")
+        .version("0.1")
+        .about("searches for pattern")
+        .arg(Arg::with_name("pattern")
+            .help("The pattern to search for")
+            .takes_value(true)
+            .required(true))
+        .arg(Arg::with_name("input")
+            .help("file to search")
+            .takes_value(true)
+            .required(false))
+        .get_matches();
 
+    let pattern = args.value_of("pattern").unwrap();
+    let re = Regex::new(pattern).unwrap();
+
+    let input = args.value_of("input").unwrap_or("-");
+    let mut filename = String::new(); 
+    if input == "-" {
+        let stdin = io::stdin();
+        let _ = stdin.read_line(&mut filename);
+        filename.remove(filename.len() - 1);
+    }
+
+    if filename.is_empty() {
+        filename = input.to_string();
+    }
+    let f = File::open(filename).unwrap();
+    let reader = BufReader::new(f);
+    process_lines(reader, re);
+}
+
+fn process_lines<T: BufRead + Sized>(reader: T, re: Regex) {
+    for line_ in reader.lines() {
+        let line = line_.unwrap();
+        match re.find(&line) {
+            Some(_) => println!("{}", line),
+            None => (),
+        }
+    }
+}
+
+fn grep_command_line() {
+    let args = App::new("grep-lite")
+        .version("0.1")
+        .about("searches for pattern")
+        .arg(Arg::with_name("pattern")
+            .help("The pattern to search for")
+            .takes_value(true)
+            .required(true))
+        .arg(Arg::with_name("input")
+            .help("file to search")
+            .takes_value(true)
+            .required(true))
+        .get_matches();
+    let pattern = args.value_of("pattern").unwrap();
+    let re = Regex::new(pattern).unwrap();
+
+    let filename = args.value_of("input").unwrap();
+    let f = File::open(filename).unwrap();
+    let reader = BufReader::new(f);
 
     for line in reader.lines() {
         let line = line.unwrap();
-        println!("{} ({} bytes long)", line, line.len());
+        match re.find(&line) {
+            Some(_) => println!("{}", line),
+            None => (),
+        }
     }
 }
 
