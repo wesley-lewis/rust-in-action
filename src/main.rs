@@ -1,9 +1,24 @@
 #![allow(dead_code)]
 
+use std::fs::File;
+use std::io::BufReader;
+use std::io::prelude::*;
+
 use regex::Regex;
 use clap::{App, Arg};
 
 fn main() {
+    let f = File::open("readme.md").unwrap();
+    let reader = BufReader::new(f);
+
+
+    for line in reader.lines() {
+        let line = line.unwrap();
+        println!("{} ({} bytes long)", line, line.len());
+    }
+}
+
+fn regex_search() {
     let args = App::new("grep-lite")
         .version("0.1")
         .about("searches for patterns")
@@ -79,3 +94,4 @@ through millions of pages?";
         }
     }
 }
+// Pg 99: Reading from files
